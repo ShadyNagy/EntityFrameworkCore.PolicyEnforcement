@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using EntityFrameworkCore.PolicyEnforcement.Models;
 using System.Linq.Expressions;
 using System;
+using System.Collections.Concurrent;
 
 namespace EntityFrameworkCore.PolicyEnforcement.Interceptors;
 
@@ -16,18 +17,19 @@ internal class PolicySaveChangesInterceptor : SaveChangesInterceptor
 {
 	private readonly IPolicyEnforcementService _policyService;
 	private readonly PolicyEnforcementOptions _options;
+	private static readonly ConcurrentDictionary<string, Delegate> _compiledExpressionCache = new();
 
 	public PolicySaveChangesInterceptor(
-					IPolicyEnforcementService policyService,
-					PolicyEnforcementOptions options)
+							IPolicyEnforcementService policyService,
+							PolicyEnforcementOptions options)
 	{
 		_policyService = policyService;
 		_options = options;
 	}
 
 	public override InterceptionResult<int> SavingChanges(
-					DbContextEventData eventData,
-					InterceptionResult<int> result)
+							DbContextEventData eventData,
+							InterceptionResult<int> result)
 	{
 		if (_options.EnableForCommands)
 		{
@@ -37,9 +39,9 @@ internal class PolicySaveChangesInterceptor : SaveChangesInterceptor
 	}
 
 	public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
-					DbContextEventData eventData,
-					InterceptionResult<int> result,
-					CancellationToken cancellationToken = default)
+							DbContextEventData eventData,
+							InterceptionResult<int> result,
+							CancellationToken cancellationToken = default)
 	{
 		if (_options.EnableForCommands)
 		{
@@ -48,14 +50,14 @@ internal class PolicySaveChangesInterceptor : SaveChangesInterceptor
 		return await base.SavingChangesAsync(eventData, result, cancellationToken);
 	}
 
-	private void EnforcePoliciesOnChanges(DbContext context)
+	private void EnforcePoliciesOnChanges(DbContext? context)
 	{
 		if (context == null) return;
 
 		var entries = context.ChangeTracker.Entries()
-						.Where(e => e.State == EntityState.Added ||
-												e.State == EntityState.Modified ||
-												e.State == EntityState.Deleted);
+								.Where(e => e.State == EntityState.Added ||
+																		e.State == EntityState.Modified ||
+																		e.State == EntityState.Deleted);
 
 		foreach (var entry in entries)
 		{
@@ -67,8 +69,8 @@ internal class PolicySaveChangesInterceptor : SaveChangesInterceptor
 					if (_options.ThrowOnViolation)
 					{
 						throw new PolicyViolationException(
-										entityType.Name,
-										GetOperationName(entry.State));
+												entityType.Name,
+												GetOperationName(entry.State));
 					}
 					else
 					{
@@ -84,29 +86,47 @@ internal class PolicySaveChangesInterceptor : SaveChangesInterceptor
 		if (entry.Entity is IDefineOwnAccessPolicy selfChecking)
 		{
 			return selfChecking.CanAccess(
-							_policyService.GetUserContext(),
-							GetOperationName(entry.State));
+									_policyService.GetUserContext(),
+									GetOperationName(entry.State));
 		}
 
 		var policyName = GetPolicyNameForOperation(entry.State);
 
 		try
 		{
-			var method = typeof(IPolicyEnforcementService)
-							.GetMethod(nameof(IPolicyEnforcementService.GetPolicyExpression))
-							.MakeGenericMethod(entityType.ClrType);
+			var expression = GetPolicyExpression(entityType.ClrType, policyName);
+			if (expression == null)
+				return true;
 
-			var policyExpression = method.Invoke(
-							_policyService,
-							new object[] { entityType, policyName });
-
-			return EvaluatePolicyForEntity(policyExpression, entry.Entity);
+			return EvaluatePolicyForEntity(expression, entry.Entity);
 		}
 		catch (Exception ex)
 		{
-			System.Diagnostics.Debug.WriteLine($"Error evaluating policy: {ex.Message}");
-
+			//TODO: use ILogger
+			// System.Diagnostics.Debug.WriteLine($"Error evaluating policy: {ex.Message}");
 			return false;
+		}
+	}
+
+	private object? GetPolicyExpression(Type entityType, string policyName)
+	{
+		try
+		{
+			var method = typeof(IPolicyEnforcementService)
+									.GetMethod(nameof(IPolicyEnforcementService.GetPolicyExpression))
+									?.MakeGenericMethod(entityType);
+
+			if (method == null) return null;
+
+			return method.Invoke(
+									_policyService,
+									new object[] { entityType, policyName });
+		}
+		catch (Exception ex)
+		{
+			//TODO: use ILogger
+			//System.Diagnostics.Debug.WriteLine($"Error getting policy expression: {ex.Message}");
+			return null;
 		}
 	}
 
@@ -139,29 +159,59 @@ internal class PolicySaveChangesInterceptor : SaveChangesInterceptor
 
 		var entityType = entity.GetType();
 
-		var funcType = typeof(Func<,>).MakeGenericType(entityType, typeof(bool));
-		var expressionType = typeof(Expression<>).MakeGenericType(funcType);
+		var cacheKey = $"{entityType.FullName}_{policyExpression.GetHashCode()}";
 
-		if (!expressionType.IsInstanceOfType(policyExpression))
-			return true;
+		var compiledFunc = _compiledExpressionCache.GetOrAdd(cacheKey, _ =>
+		{
+			var funcType = typeof(Func<,>).MakeGenericType(entityType, typeof(bool));
+			var expressionType = typeof(Expression<>).MakeGenericType(funcType);
+
+			if (!expressionType.IsInstanceOfType(policyExpression))
+			{
+				var parameter = Expression.Parameter(entityType, "e");
+				var trueConstant = Expression.Constant(true, typeof(bool));
+				var lambda = Expression.Lambda(funcType, trueConstant, parameter);
+				return lambda.Compile();
+			}
+
+			try
+			{
+				var compileMethod = expressionType.GetMethod("Compile", Type.EmptyTypes);
+				if (compileMethod == null)
+				{
+					var parameter = Expression.Parameter(entityType, "e");
+					var trueConstant = Expression.Constant(true, typeof(bool));
+					var lambda = Expression.Lambda(funcType, trueConstant, parameter);
+					return lambda.Compile();
+				}
+
+				return (Delegate)compileMethod.Invoke(policyExpression, null)!;
+			}
+			catch (Exception ex)
+			{
+				//TODO: use ILogger
+				//System.Diagnostics.Debug.WriteLine($"Error compiling expression: {ex.Message}");
+
+				var parameter = Expression.Parameter(entityType, "e");
+				var falseConstant = Expression.Constant(false, typeof(bool));
+				var lambda = Expression.Lambda(funcType, falseConstant, parameter);
+				return lambda.Compile();
+			}
+		});
 
 		try
 		{
-			var compileMethod = expressionType.GetMethod("Compile", Type.EmptyTypes);
-			if (compileMethod == null)
-				return true;
-
-			var func = compileMethod.Invoke(policyExpression, null);
-
+			var funcType = typeof(Func<,>).MakeGenericType(entityType, typeof(bool));
 			var invokeMethod = funcType.GetMethod("Invoke", new[] { entityType });
 			if (invokeMethod == null)
 				return true;
 
-			return (bool)invokeMethod.Invoke(func, new[] { entity });
+			return (bool)invokeMethod.Invoke(compiledFunc, new[] { entity });
 		}
 		catch (Exception ex)
 		{
-			System.Diagnostics.Debug.WriteLine($"Error evaluating policy: {ex.Message}");
+			//TODO: use ILogger
+			//System.Diagnostics.Debug.WriteLine($"Error evaluating policy: {ex.Message}");
 			return false;
 		}
 	}
