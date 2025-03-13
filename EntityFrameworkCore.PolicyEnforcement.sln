@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35818.85
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{F28F9820-8129-4A48-88E6-966E7E054BD1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityFrameworkCore.PolicyEnforcement", "src\EntityFrameworkCore.PolicyEnforcement\EntityFrameworkCore.PolicyEnforcement.csproj", "{FB96CD3F-10B6-B152-0455-DB5F3457874D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FB96CD3F-10B6-B152-0455-DB5F3457874D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB96CD3F-10B6-B152-0455-DB5F3457874D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB96CD3F-10B6-B152-0455-DB5F3457874D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB96CD3F-10B6-B152-0455-DB5F3457874D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FB96CD3F-10B6-B152-0455-DB5F3457874D} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A874FE5B-0AD7-404B-A60A-AD8D05016CA0}
+	EndGlobalSection
+EndGlobal
