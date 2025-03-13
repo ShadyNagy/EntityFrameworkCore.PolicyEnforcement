@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>EntityFrameworkCore.PolicyEnforcement</id>
+    <title>EF Policy Enforcement</title>
+    <version>1.0.0</version>
+    <authors>Shady Nagy</authors>
+    <owners>Shady Nagy</owners>
+
+    <Description>
+      EntityFrameworkCore.PolicyEnforcement is a .NET library designed to provide robust policy enforcement capabilities for Entity Framework Core.
+      It enables declarative access control at the entity level, allowing you to define who can access, create, update, or delete entities.
+      The library integrates seamlessly with .NET Dependency Injection and supports various policy types including role-based, permission-based, ownership-based, and property-based policies.
+    </Description>
+
+    <summary>
+      A .NET library for policy enforcement Entity Framework Core operations with dependency injection support.
+    </summary>
+
+    <language>en-US</language>
+    <license type="expression">MIT</license>
+
+    <repository type="git" url="https://github.com/ShadyNagy/EntityFrameworkCore.PolicyEnforcement" />
+    <projectUrl>https://github.com/ShadyNagy/EntityFrameworkCore.PolicyEnforcement</projectUrl>
+    <documentation>https://github.com/ShadyNagy/EntityFrameworkCore.PolicyEnforcement/wiki</documentation>
+    <issueTracker>https://github.com/ShadyNagy/EntityFrameworkCore.PolicyEnforcement/issues</issueTracker>
+
+    <releaseNotes>
+      - Initial release of EntityFrameworkCore.PolicyEnforcement.
+    </releaseNotes>
+
+    <tags>EntityFrameworkCore, EntityFramework, EF, Interceptor, PolicyEnforcement, .NET, DependencyInjection, efcore, policy, access-control, authorization, security</tags>
+
+    <icon>icon.png</icon>
+    <copyright>Copyright 2019 - 2025 (c) Shady Nagy. All rights reserved.</copyright>
+    <readme>README.md</readme>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+
+    <!-- Dependencies -->
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="8.0.2" />
+        <dependency id="Microsoft.EntityFrameworkCore" version="8.0.13" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+      </group>
+    </dependencies>
+
+    <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
+  </metadata>
+
+  <files>
+    <file src="src\EntityFrameworkCore.PolicyEnforcement\bin\Release\net80\EntityFrameworkCore.PolicyEnforcement.dll" target="lib\net8.0" />
+    <file src="icon.png" />
+    <file src="README.md" />
+    <file src="LICENSE" />
+  </files>
+</package>
