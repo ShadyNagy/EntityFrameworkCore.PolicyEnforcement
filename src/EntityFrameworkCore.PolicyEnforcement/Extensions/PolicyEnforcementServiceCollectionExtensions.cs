@@ -13,22 +13,23 @@ namespace EntityFrameworkCore.PolicyEnforcement.Extensions;
 /// </summary>
 public static class PolicyEnforcementServiceCollectionExtensions
 {
-	/// <summary>
-	/// Adds policy enforcement services to the service collection.
-	/// </summary>
-	/// <param name="services">The service collection.</param>
-	/// <param name="configureOptions">Optional action to configure policy enforcement options.</param>
-	/// <returns>The service collection for chaining.</returns>
-	public static IServiceCollection AddPolicyEnforcement(this IServiceCollection services,
-		Action<PolicyEnforcementOptions>? configureOptions = null)
-	{
-		services.AddOptions<PolicyEnforcementOptions>()
-			.Configure(options => configureOptions?.Invoke(options));
+  /// <summary>
+  /// Adds policy enforcement services to the service collection.
+  /// </summary>
+  /// <param name="services">The service collection.</param>
+  /// <param name="configureOptions">Optional action to configure policy enforcement options.</param>
+  /// <returns>The service collection for chaining.</returns>
+  public static IServiceCollection AddPolicyEnforcement(this IServiceCollection services,
+    Action<PolicyEnforcementOptions>? configureOptions = null)
+  {
+    var options = new PolicyEnforcementOptions();
+    configureOptions?.Invoke(options);
 
-		services.AddScoped<IPolicyEnforcementService, PolicyEnforcementService>();
-		services.AddScoped<IQueryFilterInterceptor, PolicyQueryInterceptor>();
-		services.AddScoped<ISaveChangesInterceptor, PolicySaveChangesInterceptor>();
+    services.AddSingleton(options);
+    services.AddScoped<IPolicyEnforcementService, PolicyEnforcementService>();
+    services.AddScoped<IQueryFilterInterceptor, PolicyQueryInterceptor>();
+    services.AddScoped<ISaveChangesInterceptor, PolicySaveChangesInterceptor>();
 
-		return services;
-	}
+    return services;
+  }
 }
