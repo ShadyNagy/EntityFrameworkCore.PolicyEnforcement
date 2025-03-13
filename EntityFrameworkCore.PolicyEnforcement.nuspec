@@ -7,11 +7,11 @@
     <authors>Shady Nagy</authors>
     <owners>Shady Nagy</owners>
 
-    <Description>
+    <description>
       EntityFrameworkCore.PolicyEnforcement is a .NET library designed to provide robust policy enforcement capabilities for Entity Framework Core.
       It enables declarative access control at the entity level, allowing you to define who can access, create, update, or delete entities.
       The library integrates seamlessly with .NET Dependency Injection and supports various policy types including role-based, permission-based, ownership-based, and property-based policies.
-    </Description>
+    </description>
 
     <summary>
       A .NET library for policy enforcement Entity Framework Core operations with dependency injection support.
