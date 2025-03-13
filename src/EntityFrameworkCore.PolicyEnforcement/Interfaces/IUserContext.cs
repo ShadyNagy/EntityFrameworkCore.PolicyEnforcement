@@ -2,7 +2,7 @@
 
 public interface IUserContext
 {
-	string GetCurrentUserId();
+	string? GetCurrentUserId();
 	bool IsInRole(string role);
 	bool HasPermission(string permission);
 }
